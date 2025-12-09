@@ -1,0 +1,9 @@
+{
+  "name": "KOMBO",
+  "description": "The super app connecting travelers with senders (AGITA) and a comprehensive service marketplace. Modern, fast, and AI-powered.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}

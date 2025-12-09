@@ -1,2 +1,2 @@
 # Kombaapp
-Agita &amp; Services
+Agita & Services
