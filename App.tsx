@@ -320,7 +320,7 @@ const App: React.FC = () => {
       case 'history':
         return <HistoryView lang={language} user={user} />;
       case 'boosts':
-        return <BoostsView lang={language} />;
+        return <BoostsView lang={language} user={user} onPaid={async () => { const b = await walletService.getBalance(user.id); setBalance(b); }} />;
       case 'plans':
         return <PlansView lang={language} />;
       default:
@@ -352,6 +352,11 @@ const App: React.FC = () => {
             <SidebarItem icon={<MessageSquare size={20} />} label={t.chat} active={currentView === 'chat'} onClick={() => setCurrentView('chat')} />
             <div className="my-4 border-t border-gray-100 dark:border-gray-700"></div>
             <SidebarItem icon={<User size={20} />} label={t.profile} active={currentView === 'profile'} onClick={() => setCurrentView('profile')} />
+            <SidebarItem icon={<TrendingUp size={20} />} label={language==='pt'?'Carteira':'Wallet'} active={currentView === 'wallet'} onClick={() => setCurrentView('wallet')} />
+            <SidebarItem icon={<Search size={20} />} label={language==='pt'?'Histórico':'History'} active={currentView === 'history'} onClick={() => setCurrentView('history')} />
+            <SidebarItem icon={<Zap size={20} />} label={'Boosts'} active={currentView === 'boosts'} onClick={() => setCurrentView('boosts')} />
+            <SidebarItem icon={<ShieldCheck size={20} />} label={language==='pt'?'Planos':'Plans'} active={currentView === 'plans'} onClick={() => setCurrentView('plans')} />
+            <SidebarItem icon={<Globe size={20} />} label={language==='pt'?'Definições':'Settings'} active={currentView === 'settings'} onClick={() => setCurrentView('settings')} />
           </nav>
 
           <div className="p-4 border-t border-gray-100 dark:border-gray-700">

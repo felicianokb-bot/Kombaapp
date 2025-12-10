@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Language, AuthUser, Transaction } from '../types'
 import getSupabase from '../services/supabaseClient'
+import walletService from '../services/walletService'
 
 interface HistoryViewProps {
   lang: Language
@@ -10,6 +11,8 @@ interface HistoryViewProps {
 const HistoryView: React.FC<HistoryViewProps> = ({ lang, user }) => {
   const [items, setItems] = useState<Transaction[]>([])
   const [loading, setLoading] = useState<boolean>(false)
+  const [filter, setFilter] = useState<'all'|'deposit'|'withdrawal'|'payment'|'earning'>('all')
+  const [balance, setBalance] = useState<number>(0)
 
   useEffect(() => {
     ;(async () => {
@@ -32,6 +35,8 @@ const HistoryView: React.FC<HistoryViewProps> = ({ lang, user }) => {
         } else {
           setItems([])
         }
+        const b = await walletService.getBalance(user.id)
+        setBalance(b)
       } catch {
         setItems([])
       }
@@ -42,7 +47,19 @@ const HistoryView: React.FC<HistoryViewProps> = ({ lang, user }) => {
   return (
     <div className="h-full bg-gray-50 dark:bg-gray-900 p-6 md:p-8 transition-colors">
       <div className="max-w-3xl mx-auto">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">{lang==='pt'?'Histórico':'History'}</h2>
+        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">{lang==='pt'?'Histórico':'History'}</h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm text-gray-600 dark:text-gray-300">{lang==='pt'?'Saldo atual:':'Current balance:'} <span className="font-bold">Kz {balance.toLocaleString()}</span></div>
+          <div className="flex gap-2">
+            {(['all','deposit','withdrawal','payment','earning'] as const).map(f => (
+              <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${filter===f?'bg-blue-600 text-white border-blue-600':'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600'}`}>
+                {lang==='pt'
+                  ? f==='all'?'Todos':f==='deposit'?'Depósitos':f==='withdrawal'?'Saques':f==='payment'?'Pagamentos':'Recebimentos'
+                  : f==='all'?'All':f==='deposit'?'Deposits':f==='withdrawal'?'Withdrawals':f==='payment'?'Payments':'Earnings'}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">
@@ -50,28 +67,32 @@ const HistoryView: React.FC<HistoryViewProps> = ({ lang, user }) => {
                 <th className="p-3 text-left">{lang==='pt'?'Data':'Date'}</th>
                 <th className="p-3 text-left">{lang==='pt'?'Tipo':'Type'}</th>
                 <th className="p-3 text-left">{lang==='pt'?'Estado':'Status'}</th>
+                <th className="p-3 text-left">{lang==='pt'?'Referência':'Reference'}</th>
                 <th className="p-3 text-right">Kz</th>
               </tr>
             </thead>
             <tbody>
-              {items.map(i => (
+              {items.filter(i => filter==='all' ? true : i.type===filter).map(i => (
                 <tr key={i.id} className="border-t border-gray-100 dark:border-gray-700">
                   <td className="p-3 text-gray-700 dark:text-gray-200">{new Date(i.date).toLocaleString()}</td>
-                  <td className="p-3 font-bold text-gray-800 dark:text-white">{i.type}</td>
+                  <td className="p-3 font-bold text-gray-800 dark:text-white">{lang==='pt'
+                    ? i.type==='deposit'?'Depósito':i.type==='withdrawal'?'Saque':i.type==='payment'?'Pagamento':'Recebimento'
+                    : i.type==='deposit'?'Deposit':i.type==='withdrawal'?'Withdrawal':i.type==='payment'?'Payment':'Earning'}</td>
                   <td className="p-3 text-xs font-bold">
                     <span className={i.status==='completed'?'text-green-600 dark:text-green-400':i.status==='failed'?'text-red-600 dark:text-red-400':'text-gray-500 dark:text-gray-300'}>{i.status}</span>
                   </td>
-                  <td className="p-3 text-right font-bold text-gray-800 dark:text-white">{i.amount.toLocaleString()}</td>
+                  <td className="p-3 text-gray-600 dark:text-gray-300">{i.reference}</td>
+                  <td className={`p-3 text-right font-bold ${i.type==='deposit'||i.type==='earning'?'text-green-600 dark:text-green-400':'text-red-600 dark:text-red-400'}`}>{(i.type==='deposit'||i.type==='earning'?'+':'-')}{i.amount.toLocaleString()}</td>
                 </tr>
               ))}
               {items.length===0 && !loading && (
                 <tr>
-                  <td className="p-6 text-center text-gray-500 dark:text-gray-400" colSpan={4}>{lang==='pt'?'Sem movimentos':'No records'}</td>
+                  <td className="p-6 text-center text-gray-500 dark:text-gray-400" colSpan={5}>{lang==='pt'?'Sem movimentos':'No records'}</td>
                 </tr>
               )}
               {loading && (
                 <tr>
-                  <td className="p-6 text-center text-gray-500 dark:text-gray-400" colSpan={4}>{lang==='pt'?'A carregar...':'Loading...'}</td>
+                  <td className="p-6 text-center text-gray-500 dark:text-gray-400" colSpan={5}>{lang==='pt'?'A carregar...':'Loading...'}</td>
                 </tr>
               )}
             </tbody>

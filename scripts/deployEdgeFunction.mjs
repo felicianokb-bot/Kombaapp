@@ -4,9 +4,12 @@ import path from 'path'
 const envPath = path.resolve(process.cwd(), '.env.local')
 const tokenPath = path.resolve(process.cwd(), 'CLI Kombo.txt')
 const funcPath = path.resolve(process.cwd(), 'supabase/functions/auth-callback/index.ts')
+const envToken = process.env.SUPABASE_DB_TOKEN
+  || process.env.SUPABASE_ACCESS_TOKEN
+  || process.env.SUPABASE_TOKEN
+  || process.env.SUPABASE_SERVICE_ROLE
 
 if (!fs.existsSync(envPath)) { console.error('[erro] .env.local não encontrado'); process.exit(1) }
-if (!fs.existsSync(tokenPath)) { console.error('[erro] Token não encontrado em "CLI Kombo.txt"'); process.exit(1) }
 if (!fs.existsSync(funcPath)) { console.error('[erro] Função não encontrada em supabase/functions/auth-callback/index.ts'); process.exit(1) }
 
 const envContent = fs.readFileSync(envPath, 'utf8')
@@ -17,8 +20,15 @@ const m = supaUrl.match(/^https?:\/\/([^.]+)\.supabase\.co/i)
 const ref = m?.[1]
 if (!ref) { console.error('[erro] Não foi possível extrair project ref do VITE_SUPABASE_URL'); process.exit(1) }
 
-const token = fs.readFileSync(tokenPath, 'utf8').trim()
-if (!token) { console.error('[erro] Token vazio em CLI Kombo.txt'); process.exit(1) }
+let token = (envToken || '').trim()
+if (!token) {
+  if (!fs.existsSync(tokenPath)) {
+    console.error('[erro] Token não encontrado. Defina SUPABASE_DB_TOKEN/SUPABASE_ACCESS_TOKEN (env) ou preencha "CLI Kombo.txt"')
+    process.exit(1)
+  }
+  token = fs.readFileSync(tokenPath, 'utf8').trim()
+  if (!token) { console.error('[erro] Token vazio em CLI Kombo.txt'); process.exit(1) }
+}
 
 const code = fs.readFileSync(funcPath, 'utf8')
 

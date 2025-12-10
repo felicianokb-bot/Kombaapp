@@ -152,14 +152,22 @@ end $$;
 
 do $$
 begin
-  if not exists (select 1 from pg_policy where polname='wallet_select_own' and polrelid='public.wallets'::regclass) then
-    create policy "wallet_select_own" on public.wallets for select using (auth.uid() = user_id);
+  -- Remove políticas antigas para evitar conflitos e redundância.
+  if exists (select 1 from pg_policy where polname='wallet_select_own' and polrelid='public.wallets'::regclass) then
+    drop policy "wallet_select_own" on public.wallets;
   end if;
-  if not exists (select 1 from pg_policy where polname='wallet_upsert_own' and polrelid='public.wallets'::regclass) then
-    create policy "wallet_upsert_own" on public.wallets for insert with check (auth.uid() = user_id);
+  if exists (select 1 from pg_policy where polname='wallet_upsert_own' and polrelid='public.wallets'::regclass) then
+    drop policy "wallet_upsert_own" on public.wallets;
   end if;
-  if not exists (select 1 from pg_policy where polname='wallet_update_own' and polrelid='public.wallets'::regclass) then
-    create policy "wallet_update_own" on public.wallets for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  if exists (select 1 from pg_policy where polname='wallet_update_own' and polrelid='public.wallets'::regclass) then
+    drop policy "wallet_update_own" on public.wallets;
+  end if;
+
+  -- Cria uma única política abrangente que dá ao proprietário da carteira acesso total (SELECT, INSERT, UPDATE, DELETE).
+  if not exists (select 1 from pg_policy where polname='wallets_owner_all_access' and polrelid='public.wallets'::regclass) then
+    create policy "wallets_owner_all_access" on public.wallets for all
+    using (auth.uid() = user_id)
+    with check (auth.uid() = user_id);
   end if;
 end $$;
 
@@ -263,7 +271,7 @@ alter table public.services add column if not exists distance text;
 commit;
 `
 
-const url = `https://api.supabase.com/v1/projects/${ref}/db/query`
+const url = `https://api.supabase.com/v1/projects/${ref}/database/query`
 const res = await fetch(url, {
   method: 'POST',
   headers: {
