@@ -11,9 +11,10 @@ interface ProfileViewProps {
   user: AuthUser;
   onLogout: () => void;
   onNavigate?: (view: 'wallet' | 'history' | 'boosts' | 'plans') => void;
+  balance?: number;
 }
 
-const ProfileView: React.FC<ProfileViewProps> = ({ lang, isDarkMode, toggleTheme, user, onLogout, onNavigate }) => {
+const ProfileView: React.FC<ProfileViewProps> = ({ lang, isDarkMode, toggleTheme, user, onLogout, onNavigate, balance }) => {
   const [tableInput, setTableInput] = useState('profiles,trips,services,messages')
   const [checking, setChecking] = useState(false)
   const [checkResults, setCheckResults] = useState<TableCheckResult[] | null>(null)
@@ -90,7 +91,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ lang, isDarkMode, toggleTheme
             <div className="p-6 border-b border-gray-50 dark:border-gray-700 flex justify-between items-center">
                 <div>
                    <span className="text-gray-500 dark:text-gray-400 font-bold text-xs uppercase tracking-wider">{lang === 'pt' ? 'Saldo na Carteira' : 'Wallet Balance'}</span>
-                   <div className="text-3xl font-bold text-gray-800 dark:text-white mt-1">Kz 145.000</div>
+                   <div className="text-3xl font-bold text-gray-800 dark:text-white mt-1">Kz {(Number(balance||0)).toLocaleString()}</div>
                 </div>
                 <div className="w-12 h-12 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400">
                   <CreditCard size={24} />
