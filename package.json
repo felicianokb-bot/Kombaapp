@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "supabase:check": "node scripts/checkSupabase.mjs",
     "db:setup": "node scripts/runSql.mjs",
-    "edge:deploy": "node scripts/deployEdgeFunction.mjs"
+    "edge:deploy": "node scripts/deployEdgeFunction.mjs",
+    "db:export": "node scripts/exportSupabase.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",

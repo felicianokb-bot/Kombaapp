@@ -396,8 +396,34 @@ const AgitaView: React.FC<AgitaViewProps> = ({ lang, trips, onAddTrip, onChat, u
                     placeholder="Ex: Luanda" 
                     value={origin}
                     onChange={(e) => setOrigin(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-800 dark:text-white transition-all font-medium"
+                    className="w-full pl-10 pr-28 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-800 dark:text-white transition-all font-medium"
                   />
+                  <button onClick={async () => {
+                    try {
+                      const raw = localStorage.getItem('kombo_last_center')
+                      let c: { lat: number; lng: number } | null = null
+                      if (raw) { const o = JSON.parse(raw); if (typeof o.lat==='number'&&typeof o.lng==='number') c = o }
+                      if (!c && 'geolocation' in navigator) {
+                        await new Promise<void>((resolve) => {
+                          navigator.geolocation.getCurrentPosition((pos) => { c = { lat: pos.coords.latitude, lng: pos.coords.longitude }; resolve() }, () => resolve(), { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 })
+                        })
+                      }
+                      if (c) {
+                        try {
+                          const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${c.lat}&lon=${c.lng}`
+                          const res = await fetch(url)
+                          const data = await res.json()
+                          const name = String(data?.display_name || 'Minha localização')
+                          setOrigin(name)
+                        } catch (_e) {
+                          setOrigin('Minha localização')
+                        }
+                        setOriginCoords(c)
+                        localStorage.setItem('kombo_last_origin', JSON.stringify(c))
+                        localStorage.setItem('kombo_last_center', JSON.stringify(c))
+                      }
+                    } catch (_e) {}
+                  }} className="absolute right-2 top-2 px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700">{lang==='pt'?'Usar localização':'Use current'}</button>
                   {originSugs.length > 0 && (
                     <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-20">
                       {originSugs.map((s, i) => (

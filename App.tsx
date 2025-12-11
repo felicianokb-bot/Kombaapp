@@ -444,7 +444,7 @@ const App: React.FC = () => {
 
         {/* Main Content Area */}
         <main className={`flex-1 overflow-y-auto scroll-smooth bg-gray-50/50 dark:bg-gray-900 ${isMobile ? 'pb-20' : 'p-0'} transition-colors duration-200`}>
-          <div className={`${!isMobile && currentView !== 'map' ? 'max-w-7xl mx-auto h-full' : 'h-full'}`}>
+          <div className={`${!isMobile && currentView !== 'map' && currentView !== 'chat' ? 'max-w-7xl mx-auto h-full' : 'h-full'}`}>
              {renderContent()}
           </div>
         </main>

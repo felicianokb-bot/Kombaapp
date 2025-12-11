@@ -21,6 +21,7 @@ const MapView: React.FC<MapViewProps> = ({ lang }) => {
   const [searchingText, setSearchingText] = useState<string>('')
   const [trackingRadiusKm, setTrackingRadiusKm] = useState<number>(8)
   const [origin, setOrigin] = useState<{ lat: number; lng: number } | null>(null)
+  const [myLoc, setMyLoc] = useState<{ lat: number; lng: number } | null>(null)
   const searchPulseRef = useRef<number | null>(null)
   const presenceChannelRef = useRef<any>(null)
   const typesByUserRef = useRef<Record<string, 'driver' | 'delivery' | 'service'>>({})
@@ -126,6 +127,19 @@ const MapView: React.FC<MapViewProps> = ({ lang }) => {
     mapReadyRef.current = false
     mapRef.current = new maplibregl.Map({ container: target, style: styleUrl, center: [center.lng, center.lat] as LngLatLike, zoom: 12 })
     mapRef.current.addControl(new maplibregl.NavigationControl({ visualizePitch: true }))
+    try {
+      const geo = new (maplibregl as any).GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true, showUserHeading: true })
+      mapRef.current.addControl(geo)
+    } catch (_e) {}
+    try {
+      mapRef.current.on('moveend', () => {
+        try {
+          const c = mapRef.current!.getCenter()
+          const val = { lat: c.lat, lng: c.lng }
+          localStorage.setItem('kombo_last_center', JSON.stringify(val))
+        } catch (_e) {}
+      })
+    } catch (_e) {}
     mapRef.current.on('load', () => {
       mapReadyRef.current = true
       const toRad = (v: number) => v * Math.PI / 180
@@ -162,6 +176,33 @@ const MapView: React.FC<MapViewProps> = ({ lang }) => {
       }
       if (searchPulseRef.current) { clearInterval(searchPulseRef.current); searchPulseRef.current = null }
     }
+  }, [])
+
+  useEffect(() => {
+    let watchId: number | null = null
+    if ('geolocation' in navigator) {
+      try {
+        watchId = navigator.geolocation.watchPosition((pos) => {
+          const lat = pos.coords.latitude
+          const lng = pos.coords.longitude
+          const c = { lat, lng }
+          setMyLoc(c)
+          try { localStorage.setItem('kombo_last_center', JSON.stringify(c)) } catch {}
+          if (mapRef.current && mapReadyRef.current) {
+            try {
+              const src = mapRef.current.getSource('me') as any
+              const fc = { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] } }] }
+              if (src) src.setData(fc)
+              else {
+                mapRef.current.addSource('me', { type: 'geojson', data: fc })
+                mapRef.current.addLayer({ id: 'me-point', type: 'circle', source: 'me', paint: { 'circle-color': '#1d4ed8', 'circle-radius': 8, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 } })
+              }
+            } catch (_e) {}
+          }
+        }, () => {}, { enableHighAccuracy: true, maximumAge: 5000, timeout: 5000 })
+      } catch (_e) {}
+    }
+    return () => { try { if (watchId !== null) navigator.geolocation.clearWatch(watchId) } catch (_e) {} }
   }, [])
 
   useEffect(() => {
